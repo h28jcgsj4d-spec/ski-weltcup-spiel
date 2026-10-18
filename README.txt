@@ -1,10 +1,3 @@
-SKI-WELTCUP-TEAMSPIEL – iPhone-Web-App
+Ski-Weltcup-Teamspiel 2026/27 – Saisonstart-Version. Zwei Gruppen, Team-Sperre, manuelle Rang-Eingabe (Platz 1–30 oder nicht platziert), getrennte und gemeinsame Ranglisten, JSON-Backup. Keine aktive automatische FIS-Anbindung. Vor dem Austausch Backup erstellen. GitHub Pages: index.html und sw.js aktualisieren.
 
-1. Alle Dateien dieses Ordners zusammen in ein öffentliches GitHub-Repository hochladen.
-2. Auf GitHub: Settings > Pages > Build and deployment > Deploy from a branch > main / (root) > Save.
-3. GitHub zeigt danach eine HTTPS-Adresse an (gewöhnlich https://BENUTZER.github.io/REPOSITORY/).
-4. Auf dem iPhone diese Adresse in Safari öffnen, Teilen > Zum Home-Bildschirm.
-5. Daten werden auf diesem iPhone lokal gespeichert. Unter „Datensicherung“ regelmässig exportieren.
-
-Wichtig: Diese Dateien nicht einzeln in der iPhone-Dateivorschau öffnen. Die App benötigt HTTPS für die Installation als PWA.
-Die FIS-Fahrerliste stammt aus dem vorherigen Prototyp und wurde hier nicht erneut gegen FIS geprüft.
+Update 18.10.2026: Athletenabgleich mit Team-Screenshots, vier fehlende Athleten ergänzt; manuelle Ergänzung mit Speicherung in Backup und Teamtransfer.
