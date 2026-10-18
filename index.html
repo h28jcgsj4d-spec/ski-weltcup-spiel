@@ -28,6 +28,8 @@ th,td{border-bottom:1px solid #edf0f3;padding:8px 6px;text-align:left} th{font-s
 <h1>Ski Weltcup Teamspiel 2026/27</h1><div id="appWarning" style="display:none;padding:12px;background:#fff2dc;border-radius:8px;margin:12px 0"></div>
 <p class="lead">Pro Mitspieler: <strong>5 Männer und 5 Frauen</strong>. Pro Geschlecht gilt ein eigenes Budget von <strong>1'500 Weltcuppunkten aus 2025/26</strong> (nicht WCSL). Ohne Weltcuppunkte 2025/26: 0 Budgetpunkte.</p>
 
+<section class="card"><h2>Spielgruppe auswählen</h2><div class="row"><div><label>Aktive Gruppe</label><select id="groupSelect" onchange="setActiveGroup(this.value)"></select></div><div><label>Gruppe umbenennen</label><div class="row"><input id="groupName" placeholder="Gruppenname"><button class="soft" onclick="renameGroup()">Speichern</button></div></div></div><p class="small">Zwei unabhängige Spiele mit eigenen Mitspielern und Teams. Die Weltcupresultate werden nur einmal für beide Gruppen gespeichert.</p></section>
+<section class="card"><h2>Teamsperre für beide Gruppen</h2><p class="small">Nach dem Erfassen aller Teams sperrst du beide Gruppen gemeinsam. Anschliessend können Mitspieler und Athleten nicht mehr verändert werden. Die Ergebniserfassung bleibt möglich. Eine Entsperrung ist nur nach ausdrücklicher Bestätigung möglich.</p><div id="lockStatus"></div><div class="toolbar"><button id="lockButton" class="primary" onclick="toggleTeamLock()">Teams für Saison sperren</button></div></section>
 <div class="grid">
 <section class="card">
 <h2>Mitspieler</h2>
@@ -48,8 +50,12 @@ th,td{border-bottom:1px solid #edf0f3;padding:8px 6px;text-align:left} th{font-s
 </div>
 
 
+<section class="card" style="display:none"><h2>Weltcupresultate aktualisieren (Vorbereitung)</h2>
+<p class="small">Die App prüft eine Ergebnisdatei auf Weltcup-Kategorie, Saison und bereits importierte Rennen. Der automatische Abruf von FIS ist noch nicht angeschlossen. Ohne geprüfte Ergebnisdatei werden keine Punkte verändert.</p>
+<div class="toolbar"><button class="soft" onclick="refreshWcResults()">Weltcupresultate aktualisieren</button></div>
+<p class="small" id="wcImportStatus" role="status">Noch keine automatische Ergebnisquelle eingerichtet.</p></section>
 <section class="card">
-<h2>Renntag erfassen</h2>
+<h2>Renntag erfassen – gilt für beide Gruppen</h2>
 <div class="row">
 <div><label>Rennen</label><input id="raceLabel" placeholder="z. B. 25.10. Sölden RTL"></div>
 <div><label>Geschlecht</label><select id="raceGender" onchange="render()"><option value="M">Männer</option><option value="W">Frauen</option></select></div>
@@ -58,13 +64,20 @@ th,td{border-bottom:1px solid #edf0f3;padding:8px 6px;text-align:left} th{font-s
 <option>Abfahrt</option><option>Super-G</option><option>Riesenslalom</option><option>Slalom</option>
 </select></div>
 </div>
-<p class="small">Wähle Männer oder Frauen. Es erscheinen nur ausgewählte Personen dieses Geschlechts. Rang oder Weltcuppunkte eintragen; leere Felder zählen als 0. Resultate der Geschlechter getrennt erfassen.</p>
+<p class="small">Wähle Männer oder Frauen. Es erscheinen die ausgewählten Personen aus beiden Gruppen (jede Person nur einmal). Für jede Person Rang 1–30 oder «Nicht platziert» wählen. Leere Eingaben verhindern das Speichern. Ein Rennen wird nur einmal erfasst und kann später korrigiert werden.</p>
 <div id="raceEntryTable"></div>
-<div class="toolbar"><button class="primary" onclick="saveRaceDay()">Renntag speichern</button></div>
+<div class="toolbar"><button class="primary" onclick="saveRaceDay()">Renntag speichern</button></div><p id="raceEditStatus" class="small"></p>
 </section>
 
-<section class="card"><h2>Datensicherung</h2><p class="small">Spielstände bleiben auf diesem Gerät. Sichere die Datei regelmässig in iCloud Drive. Eine Sicherung synchronisiert keine Geräte.</p><div class="toolbar"><button class="soft" onclick="exportData()">Backup erstellen</button><button class="soft" onclick="document.getElementById('backupFile').click()">Backup wiederherstellen</button><input id="backupFile" type="file" accept=".json,application/json" style="display:none" onchange="importData(this)"></div></section>
-<section class="card"><h2>Gesamtwertung</h2><div id="standings"></div></section>
+<section class="card"><h2>Datensicherung</h2>
+<p class="small">Nur Teams übertragen oder den vollständigen Spielstand inklusive Rennergebnissen sichern. Die Dateien bleiben auf deinem Gerät.</p>
+<h3>Teams der aktiven Gruppe (ohne Rennergebnisse)</h3>
+<div class="toolbar"><button class="soft" onclick="exportTeams()">Teams exportieren</button><label style="display:inline-block;margin:0"><span class="soft" style="display:inline-block;padding:10px 13px;border-radius:9px;cursor:pointer">Teams importieren</span><input type="file" accept=".json,application/json" style="display:none" onchange="importTeams(this)"></label></div>
+<p class="small">Beim Team-Import werden nur die Teams der aktiven Gruppe nach Bestätigung ersetzt; bereits erfasste Rennergebnisse bleiben erhalten. Vorher sicherheitshalber den vollständigen Spielstand exportieren.</p>
+<h3>Vollständiger Spielstand</h3>
+<div class="toolbar"><button class="soft" onclick="exportData()">Spielstand exportieren</button><label style="display:inline-block;margin:0"><span class="soft" style="display:inline-block;padding:10px 13px;border-radius:9px;cursor:pointer">Spielstand importieren</span><input type="file" accept=".json,application/json" style="display:none" onchange="importData(this)"></label></div></section>
+<section class="card"><h2>Gesamtwertung (Männer + Frauen)</h2><div id="standings"></div></section>
+<div class="grid"><section class="card"><h2>Männerwertung</h2><div id="standingsMen"></div></section><section class="card"><h2>Frauenwertung</h2><div id="standingsWomen"></div></section></div>
 <section class="card"><h2>Teams</h2><div id="teams"></div></section>
 <section class="card"><h2>Rennergebnisse</h2><div id="races"></div><div class="toolbar"><button class="danger" onclick="resetAll()">Alle Spieldaten löschen</button></div></section>
 
@@ -85,6 +98,20 @@ try {
 } catch(e) { storageAvailable=false; }
 // Existing men's selections and race results remain unchanged after this upgrade.
 state.players.forEach(p=>{if(!Array.isArray(p.athleteIds))p.athleteIds=[];if(!Array.isArray(p.womenIds))p.womenIds=[]});
+// Legacy migration: existing players remain in the first group. Race results are global.
+function normalizeGroups(data){
+ if(!Array.isArray(data.groups)||data.groups.length!==2||data.groups.some(g=>!g||typeof g.id!=="string"||!g.id||typeof g.name!=="string"||!g.name.trim())||data.groups[0].id===data.groups[1].id){data.groups=[{id:"group1",name:"Gruppe 1"},{id:"group2",name:"Gruppe 2"}]}
+ if(!data.groups.some(g=>g.id===data.activeGroupId))data.activeGroupId=data.groups[0].id;
+ data.players.forEach(p=>{if(!data.groups.some(g=>g.id===p.groupId))p.groupId=data.groups[0].id;if(!Array.isArray(p.athleteIds))p.athleteIds=[];if(!Array.isArray(p.womenIds))p.womenIds=[]});
+ if(typeof data.teamsLocked!=="boolean")data.teamsLocked=false;
+ if(!Array.isArray(data.manualRaces))data.manualRaces=[];
+ return data;
+}
+normalizeGroups(state);
+function activePlayers(){return state.players.filter(p=>p.groupId===state.activeGroupId)}
+function setActiveGroup(id){if(state.groups.some(g=>g.id===id)){state.activeGroupId=id;selectedAthleteId=null;save()}}
+function renameGroup(){const name=document.getElementById("groupName").value.trim();if(!name)return;state.groups.find(g=>g.id===state.activeGroupId).name=name;document.getElementById("groupName").value="";save()}
+
 let selectedAthleteId=null;
 const allAthletes=[...ATHLETES,...WOMEN];
 function uid(){return "id_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,10)}
@@ -99,13 +126,13 @@ function teamPrev(p,g){return ids(p,g).reduce((s,id)=>s+(athlete(id)?.prevPoints
 function athleteCurrent(id){return state.races.filter(r=>r.athleteId===id).reduce((s,r)=>s+Number(r.points||0),0)}
 function teamCurrent(p,g){return ids(p,g).reduce((s,id)=>s+athleteCurrent(id),0)}
 function teamComplete(p){return p.athleteIds.length===5&&p.womenIds.length===5&&teamPrev(p,"M")<=LIMIT&&teamPrev(p,"W")<=LIMIT}
-function addPlayer(){const el=document.getElementById("playerName");const name=el.value.trim();if(!name)return;state.players.push({id:uid(),name,athleteIds:[],womenIds:[]});el.value="";save()}
+function addPlayer(){if(state.teamsLocked){alert("Teams sind gesperrt.");return}const el=document.getElementById("playerName");const name=el.value.trim();if(!name)return;state.players.push({id:uid(),name,groupId:state.activeGroupId,athleteIds:[],womenIds:[]});el.value="";save()}
 function selectAthleteFromDropdown(){
  const id=document.getElementById("athleteDropdown").value;selectedAthleteId=id||null;
  const a=athlete(id);
  document.getElementById("selectedAthlete").innerHTML=a?`<div class="selected"><strong>${esc(a.name)}</strong> · ${esc(a.nation)} · Vorjahr <strong>${fmt(a.prevPoints)} Punkte</strong>${a.sourceTag?` · <span class="small">${esc(a.sourceTag)}</span>`:""}</div>`:"";
 }
-function addSelectedAthlete(){
+function addSelectedAthlete(){if(state.teamsLocked){alert("Teams sind gesperrt.");return}
  const p=state.players.find(x=>x.id===document.getElementById("teamSelect").value);
  const g=document.getElementById("genderSelect").value;
  if(!p){alert("Zuerst einen Mitspieler anlegen.");return}
@@ -118,99 +145,187 @@ function addSelectedAthlete(){
  if(total>LIMIT){alert(`Budget überschritten: ${fmt(total)} von ${fmt(LIMIT)} Punkten für ${g==="W"?"Frauen":"Männer"}.`);return}
  list.push(a.id);selectedAthleteId=null;save();
 }
-function removeAthlete(pid,aid,g){const p=state.players.find(x=>x.id===pid);if(p){if(g==="W")p.womenIds=p.womenIds.filter(x=>x!==aid);else p.athleteIds=p.athleteIds.filter(x=>x!==aid);save()}}
-function deletePlayer(pid){if(confirm("Mitspieler und beide Teams löschen?")){state.players=state.players.filter(p=>p.id!==pid);save()}}
+function removeAthlete(pid,aid,g){if(state.teamsLocked){alert("Teams sind gesperrt.");return}const p=state.players.find(x=>x.id===pid);if(p){if(g==="W")p.womenIds=p.womenIds.filter(x=>x!==aid);else p.athleteIds=p.athleteIds.filter(x=>x!==aid);save()}}
+function deletePlayer(pid){if(state.teamsLocked){alert("Teams sind gesperrt.");return}if(confirm("Mitspieler und beide Teams löschen?")){state.players=state.players.filter(p=>p.id!==pid);save()}}
+// One manual race per event and gender. Every selected athlete must have an explicit result.
+let editingRaceId=null;
+function manualRaceEntries(g){return [...new Set(state.players.flatMap(p=>ids(p,g)))].sort((a,b)=>athlete(a).name.localeCompare(athlete(b).name))}
+function raceKey(label,gender){return label.trim().toLocaleLowerCase('de-CH').replace(/\s+/g,' ')+'|'+gender}
+function toggleTeamLock(){
+ if(state.teamsLocked){if(!confirm('ACHTUNG: Teams beider Gruppen wieder entsperren? Damit sind nachträgliche Änderungen möglich.'))return;state.teamsLocked=false;save();return}
+ if(!state.players.length){alert('Bitte zuerst Mitspieler und Teams erfassen.');return}
+ const incomplete=state.players.filter(p=>!teamComplete(p));
+ if(incomplete.length){alert('Sperren nicht möglich: '+incomplete.length+' Mitspieler haben noch kein vollständiges, gültiges Männer- und Frauenteam.');return}
+ if(!confirm('Alle '+state.players.length+' Teams in beiden Gruppen für die Saison sperren? Änderungen sind danach nur nach bewusster Entsperrung möglich.'))return;
+ state.teamsLocked=true;save();
+}
 function saveRaceDay(){
- const label=document.getElementById("raceLabel").value.trim();const discipline=document.getElementById("raceDiscipline").value;
- const gender=document.getElementById("raceGender").value;
- if(!label){alert("Bitte das Rennen benennen.");return}
- const used=[...new Set(state.players.flatMap(p=>ids(p,gender)))];const raceId=uid();let count=0;
+ const label=document.getElementById('raceLabel').value.trim(),gender=document.getElementById('raceGender').value,discipline=document.getElementById('raceDiscipline').value;
+ if(!label){alert('Bitte das Rennen benennen.');return}
+ if(!state.teamsLocked){alert('Vor dem ersten Rennen bitte die Teams beider Gruppen sperren.');return}
+ const used=manualRaceEntries(gender);
+ if(!used.length){alert('Keine ausgewählten Athleten dieses Geschlechts.');return}
+ const duplicate=(state.manualRaces||[]).find(r=>r.id!==editingRaceId&&raceKey(r.label,r.gender)===raceKey(label,gender));
+ if(duplicate){alert('Dieses Rennen wurde bereits gespeichert. Für Korrekturen bitte «Bearbeiten» beim bestehenden Rennen verwenden.');return}
+ const rows=[];
  for(const athleteId of used){
-   const rankEl=document.getElementById("rank_"+athleteId);const ptsEl=document.getElementById("pts_"+athleteId);
-   const rank=rankEl?.value!==""&&rankEl?.value!=null?Number(rankEl.value):null;
-   const manualPts=ptsEl?.value!==""&&ptsEl?.value!=null?Number(ptsEl.value):null;
-   if(rank!==null&&(!Number.isInteger(rank)||rank<1||rank>99)){alert("Ungültiger Rang.");return}
-   if(manualPts!==null&&(!Number.isInteger(manualPts)||manualPts<0||manualPts>100)){alert("Weltcuppunkte müssen zwischen 0 und 100 liegen.");return}
-   const points=manualPts!==null?manualPts:rank!==null?(WC_POINTS[rank]||0):0;
-   if(points>0||rank!==null){state.races.push({id:uid(),raceId,athleteId,label,discipline,gender,rank,points});count++}
+  const el=document.getElementById('result_'+athleteId),val=el?.value||'';
+  if(!val){alert('Bitte für '+athlete(athleteId).name+' eine Platzierung oder «Nicht platziert» wählen.');el?.focus();return}
+  const rank=val==='NP'?null:Number(val);
+  if(val!=='NP'&&(!Number.isInteger(rank)||rank<1||rank>30)){alert('Ungültige Platzierung.');return}
+  rows.push({athleteId,rank,points:rank===null?0:WC_POINTS[rank]});
  }
- if(count===0&&!confirm("Keine Resultate eingetragen. Renntag trotzdem speichern?"))return;
- document.getElementById("raceLabel").value="";save();
+ const existing=editingRaceId?(state.manualRaces||[]).find(r=>r.id===editingRaceId):null;
+ if(editingRaceId&&!existing){alert('Das zu bearbeitende Rennen wurde nicht gefunden.');return}
+ const raceId=existing?.id||uid();
+ const previous=state.races.filter(r=>r.raceId===raceId);
+ // Keep historic selections when a previously saved race is corrected after teams have changed.
+ for(const old of previous){if(!rows.some(r=>r.athleteId===old.athleteId))rows.push({athleteId:old.athleteId,rank:old.rank??null,points:old.points})}
+ const records=rows.map(x=>({id:uid(),raceId,athleteId:x.athleteId,label,discipline,gender,rank:x.rank,points:x.points,source:'manual'}));
+ if(!confirm((existing?'Änderungen für ':'Ergebnis speichern: ')+label+' ('+(gender==='M'?'Männer':'Frauen')+') mit '+rows.length+' Athleten?'))return;
+ // Commit all records together, only after complete validation and confirmation.
+ state.races=state.races.filter(r=>r.raceId!==raceId).concat(records);
+ if(existing){existing.label=label;existing.gender=gender;existing.discipline=discipline}
+ else state.manualRaces.push({id:raceId,label,gender,discipline});
+ editingRaceId=null;document.getElementById('raceLabel').value='';save();
 }
-function deleteRace(id){state.races=state.races.filter(r=>r.id!==id);save()}
-function resetAll(){if(confirm("Wirklich alle Männer- und Frauenteams sowie Rennergebnisse löschen?")){state={players:[],races:[]};save()}}
-const STORAGE_KEY="skiGameFIS2026";
-function downloadBackup(file){
- const url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download=file.name;
- document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+function editManualRace(id){
+ const race=(state.manualRaces||[]).find(r=>r.id===id);if(!race)return;
+ editingRaceId=id;document.getElementById('raceLabel').value=race.label;document.getElementById('raceGender').value=race.gender;document.getElementById('raceDiscipline').value=race.discipline;render();
+ document.getElementById('raceEntryTable').scrollIntoView({behavior:'smooth',block:'start'});
 }
-async function exportData(){
+function cancelRaceEdit(){editingRaceId=null;document.getElementById('raceLabel').value='';render()}
+function deleteManualRace(id){
+ const race=(state.manualRaces||[]).find(r=>r.id===id);if(!race||!confirm('Das gesamte Rennen «'+race.label+'» und alle zugehörigen Punkte löschen?'))return;
+ state.manualRaces=state.manualRaces.filter(r=>r.id!==id);state.races=state.races.filter(r=>r.raceId!==id);if(editingRaceId===id)editingRaceId=null;save();
+}
+// Fail-closed import interface. The feed must be produced by a separately verified FIS collector.
+const WC_FEED_PATH="./wc-results-2027.json";
+function normalizeWcFeed(feed){
+ if(!feed||feed.format!=="ski-wc-results"||feed.season!==2027||!Array.isArray(feed.races))throw Error("Ungültige Saison oder Ergebnisdatei.");
+ const seen=new Set(), valid=[];
+ for(const r of feed.races){
+  if(!r||r.category!=="WC"||r.sector!=="AL"||r.season!==2027||!/^\d{5,9}$/.test(String(r.raceId))||!(["M","W"].includes(r.gender))||!Array.isArray(r.results)||!r.official||!r.date||!/^202[67]-\d\d-\d\d$/.test(r.date))throw Error("Ein Rennen ist nicht als offizieller Weltcup 2026/27 bestätigt.");
+  const key=String(r.raceId);if(seen.has(key))throw Error("Doppelte Renn-ID in der Ergebnisdatei.");seen.add(key);
+  const rows=new Set();const mapped=[];
+  for(const x of r.results){
+   if(!x||typeof x.athleteId!=="string"||!Number.isInteger(x.rank)||x.rank<1||x.rank>200||rows.has(x.athleteId))throw Error("Ungültige oder doppelte Athletenzeile.");
+   rows.add(x.athleteId);const a=athlete(x.athleteId);
+   if(!a||((a.id.startsWith("w")?"W":"M")!==r.gender))throw Error("Unbekannte Athleten-ID oder falsches Geschlecht: "+x.athleteId);
+   // Only rank is accepted: FIS points must never be mistaken for World Cup points.
+   mapped.push({athleteId:x.athleteId,rank:x.rank,points:WC_POINTS[x.rank]||0});
+  }
+  valid.push({...r,raceId:key,results:mapped});
+ }
+ return valid;
+}
+function importWcFeed(feed){
+ const races=normalizeWcFeed(feed);const existing=new Set([...(state.importedWcRaceIds||[]).map(String),...state.races.filter(x=>x.fisRaceId).map(x=>String(x.fisRaceId))]);
+ const selected=new Set(state.players.flatMap(p=>[...p.athleteIds,...p.womenIds]));
+ const fresh=races.filter(r=>!existing.has(r.raceId));
+ const additions=[];
+ for(const r of fresh){
+  for(const x of r.results){if(!selected.has(x.athleteId))continue;
+   additions.push({id:uid(),raceId:"fis_"+r.raceId,fisRaceId:r.raceId,athleteId:x.athleteId,label:r.date+" "+String(r.place||"Weltcup"),discipline:String(r.discipline||""),gender:r.gender,rank:x.rank,points:x.points,source:"FIS-WC"});
+  }
+ }
+ return {fresh,additions};
+}
+async function refreshWcResults(){
+ const status=document.getElementById("wcImportStatus");status.textContent="Prüfe Ergebnisdatei …";
  try{
-  // The current state includes all players, both selections, and individual race results.
-  const now=new Date(), date=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
-  const backup={format:"ski-teamspiel-backup",version:1,createdAt:now.toISOString(),storageKey:STORAGE_KEY,data:state};
-  const file=new File([JSON.stringify(backup,null,2)],`ski-teamspiel-backup-${date}.json`,{type:"application/json"});
-  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
-   try{await navigator.share({files:[file],title:"Ski-Teamspiel Backup"});return}
-   catch(e){if(e.name==="AbortError")return}
-  }
-  downloadBackup(file);
- }catch(e){alert("Backup konnte nicht erstellt werden. Bitte prüfe den freien Speicherplatz.")}
+  const response=await fetch(WC_FEED_PATH+"?t="+Date.now(),{cache:"no-store"});
+  if(!response.ok)throw Error("Noch keine geprüfte Ergebnisquelle veröffentlicht (HTTP "+response.status+").");
+  const feed=await response.json();const {fresh,additions}=importWcFeed(feed);
+  if(!fresh.length){status.textContent="Keine neuen offiziellen Weltcuprennen. Keine Punkte verändert.";return}
+  if(!confirm(`${fresh.length} neue Weltcuprennen erkannt, ${additions.length} Punkte-Einträge für ausgewählte Fahrerinnen und Fahrer. Jetzt übernehmen?`)){status.textContent="Import abgebrochen. Keine Punkte verändert.";return}
+  state.races.push(...additions);state.importedWcRaceIds=[...new Set([...(state.importedWcRaceIds||[]),...fresh.map(r=>r.raceId)])];save();
+  status.textContent=`${fresh.length} neue Weltcuprennen übernommen. ${additions.length} Athletenresultate eingetragen.`;
+ }catch(e){status.textContent="Import nicht möglich: "+e.message+" Bisherige Ergebnisse bleiben unverändert."}
 }
-function validObject(v){return v!==null&&typeof v==="object"&&!Array.isArray(v)}
-function completelySafeId(id){return /^[A-Za-z0-9_-]{1,100}$/.test(id)}
-function validateBackup(data){
- if(!validObject(data)||!Array.isArray(data.players)||!Array.isArray(data.races))throw Error("Spielstand fehlt");
- const athleteIds=new Set(allAthletes.map(a=>a.id)),playerIds=new Set(),raceIds=new Set();
- for(const p of data.players){
-  if(!validObject(p)||typeof p.id!=="string"||!completelySafeId(p.id)||playerIds.has(p.id)||typeof p.name!=="string"||!p.name.trim()||!Array.isArray(p.athleteIds)||!(p.womenIds===undefined||Array.isArray(p.womenIds)))throw Error("Mitspieler unvollständig");
-  playerIds.add(p.id);
-  for(const [list,gender] of [[p.athleteIds,"M"],[p.womenIds||[],"W"]]){
-   if(list.length>MAX_DRIVERS||new Set(list).size!==list.length||list.some(id=>typeof id!=="string"||!athleteIds.has(id)||(gender==="W")!==id.startsWith("w")))throw Error("Team unvollständig");
-   if(list.reduce((sum,id)=>sum+athlete(id).prevPoints,0)>LIMIT)throw Error("Budget überschritten");
-  }
- }
- for(const r of data.races){
-  if(!validObject(r)||typeof r.id!=="string"||!completelySafeId(r.id)||raceIds.has(r.id)||typeof r.raceId!=="string"||!completelySafeId(r.raceId)||typeof r.athleteId!=="string"||!athleteIds.has(r.athleteId)||typeof r.label!=="string"||!r.label.trim()||typeof r.discipline!=="string"||!(r.rank===null||Number.isInteger(r.rank)&&r.rank>=1&&r.rank<=99)||!Number.isInteger(r.points)||r.points<0||r.points>100||!(r.gender===undefined||r.gender==="M"||r.gender==="W"))throw Error("Rennergebnis unvollständig");
-  if(r.gender&&((r.gender==="W")!==r.athleteId.startsWith("w")))throw Error("Geschlecht passt nicht");
-  raceIds.add(r.id);
- }
- return data;
+function deleteRace(id){const r=state.races.find(x=>x.id===id);if(!r)return;if((state.manualRaces||[]).some(x=>x.id===r.raceId)){editManualRace(r.raceId);return}if(confirm('Einzelnes Resultat löschen?')){state.races=state.races.filter(x=>x.id!==id);save()}}
+function resetAll(){if(confirm("Wirklich alle Teams BEIDER Gruppen sowie sämtliche Rennergebnisse löschen?")){state={players:[],races:[],manualRaces:[],teamsLocked:false,groups:state.groups,activeGroupId:state.activeGroupId};save()}}
+function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="ski-teamspiel-backup-beide-gruppen.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}
+function importData(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!Array.isArray(data.players)||!Array.isArray(data.races))throw Error("Format");normalizeGroups(data);editingRaceId=null;if(confirm("Beide Gruppen und alle Rennergebnisse durch das Backup ersetzen?")){state=data;save()}}catch(e){alert("Ungültige Backup-Datei.")}input.value=""};reader.readAsText(file)}
+// Separater Teamtransfer: bewusst ohne Rennen, IDs bleiben für vorhandene Resultate stabil.
+function downloadJson(data,filename){
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=filename;a.click();
+ setTimeout(()=>URL.revokeObjectURL(a.href),3000);
 }
-async function importData(input){
+function exportTeams(){
+ downloadJson({format:"ski-teamspiel-teams",version:1,season:"2026/27",groupName:state.groups.find(g=>g.id===state.activeGroupId).name,players:activePlayers().map(p=>({id:p.id,name:p.name,athleteIds:[...p.athleteIds],womenIds:[...p.womenIds]}))},"ski-teamspiel-teams-gruppe.json");
+}
+function validateTeamPlayers(data){
+ if(!data||data.format!=="ski-teamspiel-teams"||data.version!==1||!Array.isArray(data.players))throw Error("Kein gültiger Team-Export");
+ const seen=new Set();
+ return data.players.map(p=>{
+  if(!p||typeof p.id!=="string"||!p.id||seen.has(p.id)||typeof p.name!=="string"||!p.name.trim()||!Array.isArray(p.athleteIds)||!Array.isArray(p.womenIds))throw Error("Ungültige Mitspieler-Daten");
+  seen.add(p.id);
+  for(const [list,g] of [[p.athleteIds,"M"],[p.womenIds,"W"]]){
+   if(list.length>MAX_DRIVERS||new Set(list).size!==list.length||list.some(id=>typeof id!=="string"||!pool(g).some(a=>a.id===id)))throw Error("Unbekannte oder doppelte Fahrer/Fahrerinnen");
+   if(list.reduce((sum,id)=>sum+athlete(id).prevPoints,0)>LIMIT)throw Error("Ein Team überschreitet das Budget");
+  }
+  return {id:p.id,name:p.name.trim(),athleteIds:[...p.athleteIds],womenIds:[...p.womenIds]};
+ });
+}
+function importTeams(input){
+ if(state.teamsLocked){alert("Teams sind gesperrt. Zuerst bewusst entsperren.");input.value="";return}
  const file=input.files[0];if(!file)return;
- try{
-  if(file.size>10*1024*1024)throw Error("Datei zu gross");
-  const backup=JSON.parse(await file.text());
-  if(!validObject(backup)||backup.format!=="ski-teamspiel-backup"||backup.version!==1||backup.storageKey!==STORAGE_KEY||typeof backup.createdAt!=="string"||!/^\d{4}-\d{2}-\d{2}T/.test(backup.createdAt)||!Number.isFinite(Date.parse(backup.createdAt)))throw Error("Unbekanntes Backup-Format");
-  const restored=validateBackup(backup.data), created=new Date(backup.createdAt).toLocaleString("de-CH"),women=restored.players.filter(p=>p.womenIds?.length).length;
-  if(!confirm(`Sicherung vom ${created}\n${restored.players.length} Mitspieler, ${restored.players.length} Männerteams, ${restored.players.length} Frauenteams (${women} mit Auswahl), ${restored.races.length} Rennergebnisse.\n\nAktuellen Spielstand vollständig überschreiben?`))return;
-  // setItem replaces one storage value atomically; do not alter in-memory state on failure.
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(restored));
-  state=restored;state.players.forEach(p=>{if(!p.womenIds)p.womenIds=[]});render();
-  alert("Backup vollständig wiederhergestellt.");
- }catch(e){alert("Backup nicht wiederhergestellt: "+e.message+". Der aktuelle Spielstand bleibt erhalten.")}
- finally{input.value=""}
+ const reader=new FileReader();
+ reader.onload=()=>{
+  try{
+   const players=validateTeamPlayers(JSON.parse(reader.result));
+   const message=`${players.length} Mitspieler mit Männer- und Frauenteams importieren?\n\nNur die Teams der aktiven Gruppe werden ersetzt. Die andere Gruppe und Rennergebnisse bleiben erhalten.\n\nTipp: Vorher den vollständigen Spielstand sichern.`;
+   if(confirm(message)){const other=state.players.filter(p=>p.groupId!==state.activeGroupId);const usedIds=new Set(other.map(p=>p.id));state.players=other.concat(players.map(p=>{const id=usedIds.has(p.id)?uid():p.id;usedIds.add(id);return {...p,id,groupId:state.activeGroupId}}));selectedAthleteId=null;save();alert("Teams in die aktive Gruppe importiert. Die andere Gruppe und Rennergebnisse wurden nicht verändert.")}
+  }catch(e){alert("Team-Import fehlgeschlagen: "+e.message)}
+  input.value="";
+ };
+ reader.onerror=()=>{alert("Datei konnte nicht gelesen werden.");input.value=""};
+ reader.readAsText(file);
+}
+function renderGenderStandings(g,target){
+ const sorted=[...activePlayers()].sort((a,b)=>teamCurrent(b,g)-teamCurrent(a,g));
+ document.getElementById(target).innerHTML=sorted.length?sorted.map((p,i)=>`
+ <div class="team head"><div class="standing"><div class="rank">${i+1}.</div><div><strong>${esc(p.name)}</strong><div class="small">${ids(p,g).length}/5 ${g==="M"?"Männer":"Frauen"} · Budget ${fmt(teamPrev(p,g))}/${fmt(LIMIT)}</div></div></div><div class="metric">${fmt(teamCurrent(p,g))} P</div></div>`).join(""):'<p class="small">Noch keine Mitspieler.</p>';
 }
 function render(){
+ const locked=state.teamsLocked;
+ document.getElementById('lockStatus').innerHTML=locked?'<strong class="ok">✓ Beide Gruppen sind gesperrt.</strong>':'<strong class="bad">Teams noch nicht gesperrt.</strong>';
+ const lockButton=document.getElementById('lockButton');lockButton.textContent=locked?'Teams bewusst entsperren':'Teams für Saison sperren';lockButton.className=locked?'danger':'primary';
+ document.getElementById('playerName').disabled=locked;
+ document.querySelector('button[onclick="addPlayer()"]').disabled=locked;
+ document.getElementById('athleteDropdown').disabled=locked;
+ document.querySelector('button[onclick="addSelectedAthlete()"]').disabled=locked;
+ const groupSelect=document.getElementById("groupSelect");groupSelect.innerHTML=state.groups.map(g=>`<option value="${esc(g.id)}">${esc(g.name)}</option>`).join("");groupSelect.value=state.activeGroupId;
+ const currentGroup=state.groups.find(g=>g.id===state.activeGroupId);document.getElementById("groupName").placeholder=currentGroup.name;
+ const visiblePlayers=activePlayers();
  const teamSelect=document.getElementById("teamSelect");const previousTeamId=teamSelect.value;
- teamSelect.innerHTML=state.players.length?state.players.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join(""):'<option value="">Noch kein Mitspieler</option>';
- if(previousTeamId&&state.players.some(p=>p.id===previousTeamId))teamSelect.value=previousTeamId;
- const activeTeam=state.players.find(p=>p.id===teamSelect.value)||state.players[0];
+ teamSelect.innerHTML=visiblePlayers.length?visiblePlayers.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join(""):'<option value="">Noch kein Mitspieler</option>';
+ if(previousTeamId&&visiblePlayers.some(p=>p.id===previousTeamId))teamSelect.value=previousTeamId;
+ const activeTeam=visiblePlayers.find(p=>p.id===teamSelect.value)||visiblePlayers[0];
  const g=document.getElementById("genderSelect").value;const dropdown=document.getElementById("athleteDropdown");
  const sortedPool=[...pool(g)].sort((a,b)=>a.name.localeCompare(b.name));
  dropdown.innerHTML='<option value="">Person auswählen …</option>'+sortedPool.map(a=>`<option value="${a.id}" ${activeTeam&&ids(activeTeam,g).includes(a.id)?'disabled':''}>${esc(a.name)} · ${esc(a.nation)} · ${fmt(a.prevPoints)} P${a.sourceTag?' · '+esc(a.sourceTag):''}</option>`).join("");
  if(selectedAthleteId&&sortedPool.some(a=>a.id===selectedAthleteId))dropdown.value=selectedAthleteId;
  else{selectedAthleteId=null;document.getElementById("selectedAthlete").innerHTML=""}
- const raceGender=document.getElementById("raceGender").value;
- const used=[...new Set(state.players.flatMap(p=>ids(p,raceGender)))];
- const entry=document.getElementById("raceEntryTable");
- entry.innerHTML=used.length?`<table><thead><tr><th>${raceGender==="W"?"Fahrerin":"Fahrer"}</th><th>Nation</th><th class="num">Rang</th><th class="num">Punkte</th></tr></thead><tbody>${used.map(id=>{const a=athlete(id);return `<tr><td>${esc(a.name)}</td><td>${esc(a.nation)}</td><td class="num"><input style="max-width:85px" id="rank_${id}" type="number" min="1" max="99" placeholder="-"></td><td class="num"><input style="max-width:95px" id="pts_${id}" type="number" min="0" max="100" placeholder="auto"></td></tr>`}).join("")}</tbody></table>`:'<p class="small">Noch keine Personen dieses Geschlechts ausgewählt.</p>';
- const sorted=[...state.players].sort((a,b)=>(teamCurrent(b,"M")+teamCurrent(b,"W"))-(teamCurrent(a,"M")+teamCurrent(a,"W")));
+ const raceGender=document.getElementById('raceGender').value;
+ const used=manualRaceEntries(raceGender),entry=document.getElementById('raceEntryTable');
+ const editing=(state.manualRaces||[]).find(r=>r.id===editingRaceId);
+ if(editing&&editing.gender!==raceGender){editingRaceId=null}
+ const currentEdit=(state.manualRaces||[]).find(r=>r.id===editingRaceId);
+ const oldResults=new Map((currentEdit?state.races.filter(r=>r.raceId===currentEdit.id):[]).map(r=>[r.athleteId,r]));
+ entry.innerHTML=used.length?`<div style="overflow-x:auto"><table><thead><tr><th>${raceGender==='W'?'Fahrerin':'Fahrer'}</th><th>Nation</th><th>Ergebnis</th></tr></thead><tbody>${used.map(id=>{const a=athlete(id),old=oldResults.get(id);return `<tr><td>${esc(a.name)}</td><td>${esc(a.nation)}</td><td><select id="result_${id}" style="min-width:160px"><option value="">Bitte wählen …</option>${Array.from({length:30},(_,i)=>`<option value="${i+1}" ${old?.rank===i+1?'selected':''}>Platz ${i+1} · ${WC_POINTS[i+1]} P</option>`).join('')}<option value="NP" ${old&&old.rank==null?'selected':''}>Nicht platziert · 0 P</option></select></td></tr>`}).join('')}</tbody></table></div>`:'<p class="small">Noch keine Personen dieses Geschlechts ausgewählt.</p>';
+ document.getElementById('raceEditStatus').innerHTML=currentEdit?`<strong>Bearbeitung: ${esc(currentEdit.label)}</strong> <button class="soft" onclick="cancelRaceEdit()">Abbrechen</button>`:'';
+ const sorted=[...activePlayers()].sort((a,b)=>(teamCurrent(b,"M")+teamCurrent(b,"W"))-(teamCurrent(a,"M")+teamCurrent(a,"W")));
  document.getElementById("standings").innerHTML=sorted.length?sorted.map((p,i)=>`<div class="team head"><div class="standing"><div class="rank">${i+1}.</div><div><strong>${esc(p.name)}</strong><div class="small">Männer ${p.athleteIds.length}/5 · Frauen ${p.womenIds.length}/5 ${teamComplete(p)?'· ✓ vollständig':'· Team unvollständig'}</div><div class="small">Männer ${fmt(teamCurrent(p,"M"))} P · Frauen ${fmt(teamCurrent(p,"W"))} P</div></div></div><div class="metric">${fmt(teamCurrent(p,"M")+teamCurrent(p,"W"))} P</div></div>`).join(""):'<p class="small">Noch keine Mitspieler.</p>';
- document.getElementById("teams").innerHTML=state.players.length?state.players.map(p=>`<div class="team"><div class="head"><h3 style="margin:0">${esc(p.name)}</h3><strong>${fmt(teamCurrent(p,"M")+teamCurrent(p,"W"))} aktuelle Punkte</strong></div>${["M","W"].map(g=>{
- const list=ids(p,g);const budget=teamPrev(p,g);return `<h4 style="margin-bottom:4px">${g==="W"?"Frauen":"Männer"} · ${list.length}/5 · <span class="${budget<=LIMIT?'ok':'bad'}">${fmt(budget)} / ${fmt(LIMIT)} Vorjahrespunkte</span></h4>${list.length?`<table><thead><tr><th>Name</th><th>Nation</th><th class="num">2025/26</th><th class="num">2026/27</th><th></th></tr></thead><tbody>${list.map(id=>{const a=athlete(id);return `<tr><td>${esc(a?.name||'Unbekannt')}</td><td>${esc(a?.nation||'-')}</td><td class="num">${fmt(a?.prevPoints||0)}</td><td class="num">${fmt(athleteCurrent(id))}</td><td class="num"><button class="danger" onclick="removeAthlete('${p.id}','${id}','${g}')">×</button></td></tr>`}).join("")}</tbody></table>`:'<p class="small">Noch keine Auswahl.</p>'}`}).join("")}<div class="toolbar"><button class="danger" onclick="deletePlayer('${p.id}')">Mitspieler löschen</button></div></div>`).join(""):'<p class="small">Noch keine Teams.</p>';
- document.getElementById("races").innerHTML=state.races.length?`<table><thead><tr><th>Rennen</th><th>Geschlecht</th><th>Disziplin</th><th>Person</th><th class="num">Rang</th><th class="num">Punkte</th><th></th></tr></thead><tbody>${state.races.slice().reverse().map(r=>{const a=athlete(r.athleteId);return `<tr><td>${esc(r.label)}</td><td>${r.gender==="W"||r.athleteId?.startsWith('w')?'Frauen':'Männer'}</td><td>${esc(r.discipline||"")}</td><td>${esc(a?.name||"Unbekannt")}</td><td class="num">${r.rank??"-"}</td><td class="num">${fmt(r.points)}</td><td class="num"><button class="danger" onclick="deleteRace('${r.id}')">×</button></td></tr>`}).join("")}</tbody></table>`:'<p class="small">Noch keine Rennergebnisse.</p>';
+ renderGenderStandings("M","standingsMen");
+ renderGenderStandings("W","standingsWomen");
+ document.getElementById("teams").innerHTML=visiblePlayers.length?visiblePlayers.map(p=>`<div class="team"><div class="head"><h3 style="margin:0">${esc(p.name)}</h3><strong>${fmt(teamCurrent(p,"M")+teamCurrent(p,"W"))} aktuelle Punkte</strong></div>${["M","W"].map(g=>{
+ const list=ids(p,g);const budget=teamPrev(p,g);return `<h4 style="margin-bottom:4px">${g==="W"?"Frauen":"Männer"} · ${list.length}/5 · <span class="${budget<=LIMIT?'ok':'bad'}">${fmt(budget)} / ${fmt(LIMIT)} Vorjahrespunkte</span></h4>${list.length?`<table><thead><tr><th>Name</th><th>Nation</th><th class="num">2025/26</th><th class="num">2026/27</th><th></th></tr></thead><tbody>${list.map(id=>{const a=athlete(id);return `<tr><td>${esc(a?.name||'Unbekannt')}</td><td>${esc(a?.nation||'-')}</td><td class="num">${fmt(a?.prevPoints||0)}</td><td class="num">${fmt(athleteCurrent(id))}</td><td class="num"><button class="danger" ${locked?'disabled':''} onclick="removeAthlete('${p.id}','${id}','${g}')">×</button></td></tr>`}).join("")}</tbody></table>`:'<p class="small">Noch keine Auswahl.</p>'}`}).join("")}<div class="toolbar"><button class="danger" ${locked?'disabled':''} onclick="deletePlayer('${p.id}')">Mitspieler löschen</button></div></div>`).join(""):'<p class="small">Noch keine Teams.</p>';
+ const manual=(state.manualRaces||[]).slice().reverse();
+ document.getElementById('races').innerHTML=manual.length?`<div style="overflow-x:auto"><table><thead><tr><th>Rennen</th><th>Geschlecht</th><th>Disziplin</th><th>Erfasste Personen</th><th>Aktionen</th></tr></thead><tbody>${manual.map(r=>`<tr><td>${esc(r.label)}</td><td>${r.gender==='W'?'Frauen':'Männer'}</td><td>${esc(r.discipline)}</td><td>${state.races.filter(x=>x.raceId===r.id).length}</td><td><button class="soft" onclick="editManualRace('${r.id}')">Bearbeiten</button> <button class="danger" onclick="deleteManualRace('${r.id}')">Löschen</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="small">Noch keine manuell erfassten Rennen.</p>';
+
 }
 render();
 </script>
